@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Online News Network</title>
+<style>
+body{font-family:Arial;margin:0;background:#f5f7fa;color:#101828}header{background:#fff;padding:18px;border-bottom:1px solid #ddd}.wrap{max-width:1100px;margin:auto}.brand{font-size:25px;font-weight:900}.brand span{color:#d71920}.nav{padding:12px 0;display:flex;gap:20px;overflow:auto}.nav a{font-weight:700;white-space:nowrap}.breaking{background:#d71920;color:white;padding:10px}.hero{margin:24px 0;background:#101828;color:white;padding:35px;border-radius:12px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.card{background:white;border:1px solid #ddd;border-radius:10px;overflow:hidden}.pic{height:150px;background:linear-gradient(135deg,#d0d5dd,#667085)}.body{padding:16px}.tag{color:#d71920;font-weight:800;font-size:12px}.meta{color:#667085;font-size:12px}@media(max-width:700px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><div class="brand">ONLINE <span>NEWS</span> NETWORK</div><nav class="nav"><a href="index.html">Home</a><a href="#">Pakistan</a><a href="#">KPK</a><a href="#">World</a><a href="#">Sports</a><a href="#">Business</a><a href="#">Technology</a><a href="#">Entertainment</a><a href="admin.html">Admin</a></nav></div></header>
+<div class="breaking"><div class="wrap">🔴 BREAKING NEWS — Latest headlines from Online News Network</div></div>
+<main class="wrap"><section class="hero"><div class="tag" style="color:#ffb3b3">ONLINE NEWS NETWORK</div><h1>Pakistan & World — Latest News</h1><p>News published from the Online News Network admin dashboard will appear here.</p></section>
+<div id="news" class="grid"></div></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const db=supabase.createClient("https://ukrjmtcxmzgwsifynpqa.supabase.co","sb_publishable_RMKfGWv97JMNnNAkBulUUQ_gWEzzU_P");
+async function load(){const {data,error}=await db.from("news").select("*").eq("published",true).order("created_at",{ascending:false});const el=document.getElementById("news");if(error){el.innerHTML="<p>Unable to load news.</p>";return}el.innerHTML=data.length?data.map(n=>`<article class="card">${n.image_url?`<img src="${n.image_url}" style="width:100%;height:150px;object-fit:cover">`:'<div class="pic"></div>'}<div class="body"><div class="tag">${n.category}</div><h2>${n.title}</h2><p>${n.excerpt||""}</p><div class="meta">${new Date(n.created_at).toLocaleString()}</div></div></article>`).join(""):"<p>No news published yet.</p>"}
+load();
+</script></body></html>

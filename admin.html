@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ONN Admin</title><style>
+body{font-family:Arial;background:#f5f7fa;margin:0;color:#101828}.box{max-width:850px;margin:40px auto;background:#fff;padding:25px;border-radius:12px;border:1px solid #ddd}.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}input,textarea,select{width:100%;padding:11px;border:1px solid #ccd2da;border-radius:7px;margin:7px 0 14px;box-sizing:border-box}textarea{min-height:170px}button{padding:11px 16px;border:0;border-radius:7px;background:#d71920;color:#fff;font-weight:700;cursor:pointer;margin-right:7px}.secondary{background:#344054}.danger{background:#7a271a}.hidden{display:none}.news{border-top:1px solid #ddd;padding:15px 0}.msg{padding:10px;border-radius:7px;background:#f2f4f7;margin-bottom:12px}@media(max-width:700px){.row{grid-template-columns:1fr}}
+</style></head>
+<body>
+<div class="box" id="loginBox"><h1>Online News Network</h1><h2>Admin Login</h2><div id="loginMsg"></div><label>Email</label><input id="email" type="email"><label>Password</label><input id="password" type="password"><button onclick="login()">Login</button></div>
+<div class="box hidden" id="dash"><div style="display:flex;justify-content:space-between;align-items:center"><h1>Admin Dashboard</h1><button class="secondary" onclick="logout()">Logout</button></div><div id="msg"></div>
+<h2 id="formTitle">Add News</h2>
+<input type="hidden" id="editId">
+<label>Title</label><input id="title" placeholder="News headline">
+<div class="row"><div><label>Category</label><select id="category"><option>Pakistan</option><option>KPK</option><option>World</option><option>Sports</option><option>Business</option><option>Technology</option><option>Entertainment</option></select></div><div><label>Image URL</label><input id="image" placeholder="https://..."></div></div>
+<label>Excerpt</label><input id="excerpt" placeholder="Short summary">
+<label>Article</label><textarea id="content" placeholder="Write the complete article..."></textarea>
+<label><input id="breaking" type="checkbox" style="width:auto"> Breaking News</label>
+<label><input id="featured" type="checkbox" style="width:auto"> Featured</label><br><br>
+<button onclick="save()">Publish News</button><button class="secondary" onclick="clearForm()">Clear</button>
+<h2>Published / Draft News</h2><div id="list"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const db=supabase.createClient("https://ukrjmtcxmzgwsifynpqa.supabase.co","sb_publishable_RMKfGWv97JMNnNAkBulUUQ_gWEzzU_P");
+let currentUser=null;
+const $=id=>document.getElementById(id);
+async function init(){const {data}=await db.auth.getSession();currentUser=data.session?.user||null;show();db.auth.onAuthStateChange((_e,s)=>{currentUser=s?.user||null;show()})}
+function show(){$("loginBox").classList.toggle("hidden",!!currentUser);$("dash").classList.toggle("hidden",!currentUser);if(currentUser)loadNews()}
+async function login(){const {error}=await db.auth.signInWithPassword({email:$("email").value,password:$("password").value});$("loginMsg").innerHTML=error?`<div class="msg">${error.message}</div>`:""}
+async function logout(){await db.auth.signOut()}
+async function save(){if(!currentUser)return;const payload={title:$("title").value.trim(),excerpt:$("excerpt").value.trim(),content:$("content").value.trim(),category:$("category").value,image_url:$("image").value.trim()||null,is_breaking:$("breaking").checked,is_featured:$("featured").checked,published:true,author:currentUser.email};
+if(!payload.title||!payload.content){$("msg").innerHTML='<div class="msg">Title and article content are required.</div>';return}
+const id=$("editId").value;let result=id?await db.from("news").update(payload).eq("id",id):await db.from("news").insert(payload);
+$("msg").innerHTML=result.error?`<div class="msg">${result.error.message}</div>`:'<div class="msg">News saved successfully.</div>';if(!result.error){clearForm();loadNews()}}
+async function loadNews(){const {data,error}=await db.from("news").select("*").order("created_at",{ascending:false});if(error){$("list").innerHTML=error.message;return}$("list").innerHTML=data.map(n=>`<div class="news"><b>${escapeHtml(n.title)}</b><div>${n.category} • ${n.published?"Published":"Draft"}</div><button onclick='editNews(${JSON.stringify(n)})'>Edit</button><button class="danger" onclick="deleteNews(${n.id})">Delete</button></div>`).join("")||"No articles yet."}
+function editNews(n){$("editId").value=n.id;$("title").value=n.title;$("category").value=n.category;$("image").value=n.image_url||"";$("excerpt").value=n.excerpt||"";$("content").value=n.content;$("breaking").checked=n.is_breaking;$("featured").checked=n.is_featured;$("formTitle").textContent="Edit News";scrollTo(0,0)}
+async function deleteNews(id){if(!confirm("Delete this article?"))return;const {error}=await db.from("news").delete().eq("id",id);$("msg").innerHTML=error?error.message:"Deleted.";loadNews()}
+function clearForm(){$("editId").value="";$("title").value="";$("image").value="";$("excerpt").value="";$("content").value="";$("breaking").checked=false;$("featured").checked=false;$("formTitle").textContent="Add News"}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+init();
+</script></body></html>
